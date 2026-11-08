@@ -200,6 +200,11 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .maint .gear{width:56px;height:56px;color:var(--accent)}
 @media (prefers-reduced-motion:no-preference){.maint .gear{animation:spin 6s linear infinite}}
 @keyframes spin{to{transform:rotate(360deg)}}
+.ntshow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-block:2px}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg2 button{font:inherit;font-size:.82rem;font-weight:600;border:0;background:var(--surface);color:var(--muted);padding:4px 12px;cursor:pointer}
+.seg2 button+button{border-inline-start:1px solid var(--line)}
+.seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;max-width:calc(100% - 32px);z-index:20;font-size:.9rem}
 .empty{padding:30px;text-align:center;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -1152,9 +1157,12 @@ const reportGen=api=>{const {m,newPage,add,addTable,H,img}=api;
 
 /* ---------- teacher notice (إشعار معلم) ---------- */
 EX.teachers=EX.teachers||{};
-const NT={sub:null,levels:[3,4],over:{},scope:'current',names:true};
-try{NT.names=localStorage.getItem('ra-nt-names')!=='0'}catch(_){}
-const ntSec=()=>NT.names?'ثالثًا':'ثانيًا';
+const NT={sub:null,levels:[3,4],over:{},scope:'current',show:{}};
+try{const v=JSON.parse(localStorage.getItem('ra-nt-show')||'null');if(v&&typeof v==='object') NT.show=v;else if(localStorage.getItem('ra-nt-names')==='0') NT.show={0:false,1:false,2:false,3:false,4:false,abs:false}}catch(_){}
+/* per level: show the students' names in "طلاب كل مستوى", or only the count (already in the levels table) */
+const showN=i=>NT.show[i]!==false;
+const ntHasNames=d=>d.byLevel.some((l,i)=>l.length&&showN(i))||(d.absent.length>0&&showN('abs'));
+const ntSec=d=>ntHasNames(d)?'ثالثًا':'ثانيًا';
 try{const v=JSON.parse(localStorage.getItem('ra-nt-levels')||'null');if(Array.isArray(v)) NT.levels=v}catch(_){}
 const ntKey=(g,sub,st)=>g+'|'+sub+'|'+(st.id||st.name)+'|'+(st.cls||'');
 function ntSelected(g,s,st){const p=pct(st,s);const k=ntKey(g,s.label,st);if(k in NT.over) return NT.over[k];return p!=null&&NT.levels.includes(gradeIdx(p))}
@@ -1178,7 +1186,9 @@ function vNotice(){
   const lvChk=S.scale.map((lv,i)=>`<label class="chk"><input type="checkbox" data-ntlv="${i}" ${NT.levels.includes(i)?'checked':''}><span class="pill ${gcls(i)}">${lv.label}</span></label>`).join('');
   const lvTable=`<div class="tw"><table class="lv"><thead><tr>${S.scale.map(lv=>`<th>${lv.label}</th>`).join('')}${d.absent.length?'<th>غائب</th>':''}<th>المجموع</th><th>المتوسط</th><th>نسبة النجاح</th></tr></thead>
     <tbody><tr>${d.byLevel.map(l=>`<td>${l.length}</td>`).join('')}${d.absent.length?`<td>${d.absent.length}</td>`:''}<td>${d.list.length}</td><td>${f1(d.x.avg)}٪</td><td>${f1(d.x.pass)}٪</td></tr></tbody></table></div>`;
-  const levelsList=d.byLevel.map((l,i)=>l.length?`<div class="ntlv"><span class="pill ${gcls(i)}">${S.scale[i].label} (${l.length})</span><span>${l.map(r=>esc(r.st.name)+' <b class="num">'+f1(r.v)+'</b>').join('، ')}</span></div>`:'').join('');
+  const levelsList=d.byLevel.map((l,i)=>l.length&&showN(i)?`<div class="ntlv"><span class="pill ${gcls(i)}">${S.scale[i].label} (${l.length})</span><span>${l.map(r=>esc(r.st.name)+' <b class="num">'+f1(r.v)+'</b>').join('، ')}</span></div>`:'').join('')+(d.absent.length&&showN('abs')?`<div class="ntlv"><span class="pill" style="background:var(--muted)">غائب (${d.absent.length})</span><span>${d.absent.map(r=>esc(r.st.name)).join('، ')}</span></div>`:'');
+  const showRow=(k,lab,cls,n)=>`<div class="ntshow"><span class="pill ${cls}" ${cls?'':'style="background:var(--muted)"'}>${lab} <span class="num">(${n})</span></span><span class="seg2" role="group" aria-label="${lab}"><button type="button" data-nts="${k}" data-v="1" aria-pressed="${showN(k)}">الأسماء</button><button type="button" data-nts="${k}" data-v="0" aria-pressed="${!showN(k)}">العدد فقط</button></span></div>`;
+  const showRows=S.scale.map((lv,i)=>showRow(i,lv.label,gcls(i),d.byLevel[i].length)).join('')+(d.absent.length?showRow('abs','غائب','',d.absent.length):'');
   const pickRows=d.rows.filter(r=>r.p!=null).slice().sort((a,b)=>a.p-b.p).map(r=>{const on=ntSelected(g,s,r.st);const gi=gradeIdx(r.p);
     return `<tr class="${on?'sel':''}"><td><input type="checkbox" data-ntst="${esc(ntKey(g,s.label,r.st))}" ${on?'checked':''} aria-label="تحديد ${esc(r.st.name)}"></td><td class="name">${esc(r.st.name)}</td>${d.multi?`<td class="muted">${esc(r.st.cls)}</td>`:''}<td class="num">${scoreTxt(r,s)}</td><td><span class="pill ${gcls(gi)}">${S.scale[gi].label}</span></td></tr>`}).join('');
   return `<div class="grid2 nt">
@@ -1193,8 +1203,9 @@ function vNotice(){
     <div class="tw" style="max-height:340px;overflow:auto"><table><thead><tr><th></th><th>اسم الطالب</th>${d.multi?'<th>الفصل</th>':''}<th>الدرجة</th><th>المستوى</th></tr></thead><tbody>${pickRows}</tbody></table></div>
     <div class="muted" style="font-size:.85rem">المحددون: <b>${d.sel.length}</b> طالب. الأسماء والمعلم يُحفظان لكل مادة.</div>
     <fieldset class="scope"><legend>طلاب كل مستوى في الخطاب</legend>
-      <label class="chk"><input type="radio" name="ntNames" value="1" ${NT.names?'checked':''}> إظهار الأسماء أمام كل تقدير</label>
-      <label class="chk"><input type="radio" name="ntNames" value="0" ${NT.names?'':'checked'}> الاكتفاء بالعدد</label>
+      <div class="muted" style="font-size:.82rem">اختر لكل تقدير: إظهار أسماء طلابه في الخطاب، أو الاكتفاء بعددهم في الجدول.</div>
+      ${showRows}
+      <div class="srow"><button class="btn small" type="button" data-ntsall="1">الأسماء للكل</button><button class="btn small" type="button" data-ntsall="0">العدد فقط للكل</button></div>
     </fieldset>
     <fieldset class="scope"><legend>نطاق الإشعار</legend>
       <label class="chk"><input type="radio" name="ntScope" value="current" ${NT.scope==='current'?'checked':''}> ${esc(g==='all'?(VC().length>1?'جميع الفصول مجتمعة':VC()[0]?.name||''):g)}</label>
@@ -1210,9 +1221,9 @@ function vNotice(){
       <div>السلام عليكم ورحمة الله وبركاته، وبعد:</div>
       <div>${esc(ntIntro(d,m))}</div>
       <div class="b">أولًا: توزيع الطلاب على المستويات</div>${lvTable}
-      ${NT.names?`<div class="b">ثانيًا: طلاب كل مستوى</div>${levelsList||'<div class="muted">لا توجد درجات.</div>'}`:''}
+      ${ntHasNames(d)?`<div class="b">ثانيًا: طلاب كل مستوى</div>${levelsList}`:''}
       <div class="sig"><div><b>معد التقرير</b><span>${esc(m.prep||'..................')}</span></div><div><b>مدير المدرسة</b><span>${esc(m.principal||'..................')}</span></div></div>
-      <div class="b">${ntSec()}: الطلاب المحددون (${d.sel.length}) — يدوّن المعلم الأسباب والإجراء</div>
+      <div class="b">${ntSec(d)}: الطلاب المحددون (${d.sel.length}) — يدوّن المعلم الأسباب والإجراء</div>
       ${d.sel.length?`<div class="tw"><table class="lv"><thead><tr><th>م</th><th class="sub">اسم الطالب</th><th>الدرجة</th><th>أسباب انخفاض المستوى</th><th>الإجراء العلاجي المقترح</th></tr></thead><tbody>${d.sel.map((r,i)=>`<tr><td>${i+1}</td><td class="name">${esc(r.st.name)}</td><td class="num">${scoreTxt(r,s)}</td><td></td><td></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">لم يُحدَّد طلاب.</div>'}
       <div><b>المعلم:</b> ${esc(d.teacher||'..................')} &nbsp;&nbsp; التوقيع: .......... &nbsp;&nbsp; التاريخ: ..../..../....هـ</div>
     </div>
@@ -1233,15 +1244,15 @@ function ntGen(subjects){return api=>{
     H('أولًا: توزيع الطلاب على المستويات');
     addTable(S.scale.map(lv=>`<th>${lv.label}</th>`).join('')+(d.absent.length?'<th>غائب</th>':'')+'<th>المجموع</th><th>المتوسط</th><th>نسبة النجاح</th>',
       [`<tr>${d.byLevel.map(l=>`<td>${l.length}</td>`).join('')}${d.absent.length?`<td>${d.absent.length}</td>`:''}<td>${d.list.length}</td><td>${f1(d.x.avg)}٪</td><td>${f1(d.x.pass)}٪</td></tr>`]);
-    if(NT.names){
+    if(ntHasNames(d)){
     H('ثانيًا: طلاب كل مستوى');
     addTable('<th style="width:16%">المستوى</th><th style="width:8%">العدد</th><th class="l">أسماء الطلاب (الدرجة من '+s.max+')</th>',
-      [...d.byLevel.map((l,i)=>l.length?`<tr><td><b>${S.scale[i].label}</b></td><td>${l.length}</td><td class="l">${l.map(r=>esc(r.st.name)+' ('+f1(r.v)+')').join('، ')}</td></tr>`:'').filter(Boolean),
-       ...(d.absent.length?[`<tr><td><b>غائب</b></td><td>${d.absent.length}</td><td class="l">${d.absent.map(r=>esc(r.st.name)).join('، ')}</td></tr>`]:[])]);
+      [...d.byLevel.map((l,i)=>l.length&&showN(i)?`<tr><td><b>${S.scale[i].label}</b></td><td>${l.length}</td><td class="l">${l.map(r=>esc(r.st.name)+' ('+f1(r.v)+')').join('، ')}</td></tr>`:'').filter(Boolean),
+       ...(d.absent.length&&showN('abs')?[`<tr><td><b>غائب</b></td><td>${d.absent.length}</td><td class="l">${d.absent.map(r=>esc(r.st.name)).join('، ')}</td></tr>`]:[])]);
     }
     if(EX.ntDue) add(`<p class="rp-p">موعد الإفادة: <b>${esc(EX.ntDue)}</b></p>`);
     add(`<div class="rp-sig two">${[['معد التقرير',m.prep],['مدير المدرسة',m.principal]].map(([t,n])=>`<div><span><b>${t}:</b> ${esc(n||'....................')}</span><span>التوقيع: ................</span></div>`).join('')}</div>`);
-    H(ntSec()+': الطلاب المحددون والإفادة المطلوبة');
+    H(ntSec(d)+': الطلاب المحددون والإفادة المطلوبة');
     if(d.sel.length) addTable(`<th style="width:5%">م</th><th class="l" style="width:25%">اسم الطالب</th>${d.multi?'<th style="width:11%">الفصل</th>':''}<th style="width:10%">الدرجة</th><th style="width:${d.multi?24:30}%">أسباب انخفاض المستوى</th><th>الإجراء العلاجي المقترح</th>`,
       d.sel.map((r,i)=>`<tr class="tall"><td>${i+1}</td><td class="l">${esc(r.st.name)}</td>${d.multi?`<td>${esc(r.st.cls)}</td>`:''}<td>${scoreTxt(r,s)}</td><td></td><td></td></tr>`));
     else add('<p class="rp-note">لا يوجد طلاب محددون.</p>');
@@ -1263,16 +1274,16 @@ function ntDocBody(subjects){
     const hd=[...S.scale.map(l=>l.label),...(d.absent.length?['غائب']:[]),'المجموع','المتوسط','نسبة النجاح'];
     const cw=Math.floor(10080/hd.length);
     x+=wtbl(hd.map(()=>cw),[hd,[...d.byLevel.map(l=>String(l.length)),...(d.absent.length?[String(d.absent.length)]:[]),String(d.list.length),f1(d.x.avg)+'٪',f1(d.x.pass)+'٪'].map(t=>({t,center:true}))],{head:true,sz:20});
-    if(NT.names){
+    if(ntHasNames(d)){
     x+=H('ثانيًا: طلاب كل مستوى');
     x+=wtbl([1500,900,7680],[['المستوى','العدد','أسماء الطلاب (الدرجة من '+s.max+')'],
-      ...d.byLevel.map((l,i)=>l.length?[{t:S.scale[i].label,b:true,center:true},String(l.length),{t:l.map(r=>r.st.name+' ('+f1(r.v)+')').join('، '),center:false}]:null).filter(Boolean),
-      ...(d.absent.length?[[{t:'غائب',b:true,center:true},String(d.absent.length),{t:d.absent.map(r=>r.st.name).join('، '),center:false}]]:[])],{head:true,sz:d.sel.length>12?16:19});
+      ...d.byLevel.map((l,i)=>l.length&&showN(i)?[{t:S.scale[i].label,b:true,center:true},String(l.length),{t:l.map(r=>r.st.name+' ('+f1(r.v)+')').join('، '),center:false}]:null).filter(Boolean),
+      ...(d.absent.length&&showN('abs')?[[{t:'غائب',b:true,center:true},String(d.absent.length),{t:d.absent.map(r=>r.st.name).join('، '),center:false}]]:[])],{head:true,sz:d.sel.length>12?16:19});
     }
     if(EX.ntDue) x+=wp(wr('موعد الإفادة: ',{sz:20})+wr(EX.ntDue,{b:true,sz:20}),{after:20});
     const sig=(t,n)=>({xml:[wp(wr(t+': ',{b:true,sz:20})+wr(n||'....................',{sz:20}),{center:true,after:20}),wp(wr('التوقيع: ................',{sz:18}),{center:true,after:0})].join('')});
     x+=wtbl([5040,5040],[[sig('معد التقرير',m.prep),sig('مدير المدرسة',m.principal)]],{noBorder:true});
-    x+=H(ntSec()+': الطلاب المحددون والإفادة المطلوبة');
+    x+=H(ntSec(d)+': الطلاب المحددون والإفادة المطلوبة');
     if(d.sel.length){
       const blank=d.sel.length>8?['']:['',''];
       const w=d.multi?[500,2500,1100,1000,2480,2500]:[500,2700,1100,2880,2900];
@@ -1342,6 +1353,8 @@ $('#copyBtn').addEventListener('click',()=>{
 $('#view').addEventListener('click',e=>{
   {const xb=e.target.closest('[data-exp]');if(xb){doExport(xb,xb.dataset.exp);return}}
   {const nb=e.target.closest('[data-ntexp]');if(nb){doNoticeExport(nb);return}}
+  {const sb=e.target.closest('[data-nts]');if(sb){NT.show[sb.dataset.nts]=sb.dataset.v==='1';try{localStorage.setItem('ra-nt-show',JSON.stringify(NT.show))}catch(_){} render();return}}
+  {const ab=e.target.closest('[data-ntsall]');if(ab){const v=ab.dataset.ntsall==='1';NT.show={0:v,1:v,2:v,3:v,4:v,abs:v};try{localStorage.setItem('ra-nt-show',JSON.stringify(NT.show))}catch(_){} render();return}}
   if(e.target.closest('[data-logo-rm]')){delete EX.logo;saveEX();render();return}
   const lb=e.target.closest('[data-lv]');
   if(lb){const [gi,si,i]=lb.dataset.lv.split('|').map(Number);
@@ -1377,7 +1390,6 @@ $('#view').addEventListener('change',e=>{
   if(t.dataset.ntlv!=null){const i=+t.dataset.ntlv;NT.levels=t.checked?[...new Set([...NT.levels,i])]:NT.levels.filter(x=>x!==i);NT.over={};try{localStorage.setItem('ra-nt-levels',JSON.stringify(NT.levels))}catch(_){} render();return}
   if(t.dataset.ntst){NT.over[t.dataset.ntst]=t.checked;render();return}
   if(t.name==='ntScope'){NT.scope=t.value;render();return}
-  if(t.name==='ntNames'){NT.names=t.value==='1';try{localStorage.setItem('ra-nt-names',NT.names?'1':'0')}catch(_){} render();return}
   if(t.name==='exScope'){S.exScope=t.value;render();return}
   if(t.id==='logoIn'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,400/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);EX.logo=c.toDataURL('image/png');saveEX();render();toast('تمت إضافة الشعار.')};im.onerror=()=>toast('تعذّرت قراءة الصورة. اختر ملف PNG أو JPG.');im.src=fr.result};fr.readAsDataURL(t.files[0]);return}
   if(t.id==='weak'){S.weak=t.checked;render()}
