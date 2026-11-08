@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>TiqnasTahlel لوحة التحكم</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230d6650'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle' fill='white' font-family='Tahoma'%3E%D8%AA%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@600;800&display=swap">
+<style>
+/* Layout: one narrow control column — status first, then the switch and message, then the key */
+:root{
+  --paper:#f4f6f2; --surface:#fff; --sunk:#eaeee8; --ink:#16231e; --muted:#5a6a63; --line:#d9e0da;
+  --accent:#0d6650; --accent-ink:#fff; --on:#1d7a4c; --off:#c03a33; --warn:#b9800f;
+  --f-display:"Noto Kufi Arabic","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#0f1513; --surface:#161f1c; --sunk:#1c2723; --ink:#e4ebe7; --muted:#93a39c; --line:#2a3833;
+  --accent:#3cbf93; --accent-ink:#06261c; --on:#46c486; --off:#f0675f; --warn:#e2ab3c; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.65 var(--f-body);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px;display:grid;gap:16px}
+h1,h2{font-family:var(--f-display);margin:0;line-height:1.35}
+h1{font-size:1.3rem} h2{font-size:1rem}
+.top{display:flex;gap:12px;align-items:center}
+.mark{width:42px;height:42px;border-radius:9px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:1.2rem;flex:none}
+.muted{color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px}
+.status{display:flex;gap:14px;align-items:center;border-inline-start:5px solid var(--line)}
+.status.on{border-inline-start-color:var(--on)}
+.status.off{border-inline-start-color:var(--off)}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--line);flex:none}
+.on .dot{background:var(--on);box-shadow:0 0 0 5px color-mix(in srgb,var(--on) 20%,transparent)}
+.off .dot{background:var(--off);box-shadow:0 0 0 5px color-mix(in srgb,var(--off) 20%,transparent)}
+.status b{font-family:var(--f-display);font-size:1.15rem}
+label{display:grid;gap:5px;font-weight:600;font-size:.92rem}
+input[type=text],input[type=password],textarea{font:inherit;color:inherit;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+textarea{min-height:96px;resize:vertical}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{font:inherit;font-weight:700;border:0;padding:12px;background:var(--surface);color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"].run{background:var(--on);color:#fff}
+.seg button[aria-pressed="true"].stop{background:var(--off);color:#fff}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 16px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.55;cursor:wait}
+.chk{display:flex;gap:8px;align-items:center;font-weight:500}
+.msg{padding:10px 12px;border-radius:8px;font-size:.92rem}
+.msg.ok{background:color-mix(in srgb,var(--on) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--on) 40%,var(--line))}
+.msg.err{background:color-mix(in srgb,var(--off) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--off) 40%,var(--line))}
+details summary{cursor:pointer;font-weight:700}
+details ol{margin:8px 0 0;padding-inline-start:20px;display:grid;gap:4px}
+code{background:var(--sunk);padding:1px 6px;border-radius:5px;font-size:.88em;direction:ltr;unicode-bidi:embed}
+.small{font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mark" aria-hidden="true">ت</div>
+    <div><h1>لوحة تحكم TiqnasTahlel</h1><div class="muted small">إيقاف المنصة للصيانة وإعادة تشغيلها</div></div>
+  </header>
+
+  <section class="panel status" id="statusBox" aria-live="polite">
+    <span class="dot" aria-hidden="true"></span>
+    <div><div class="muted small">حالة المنصة الآن</div><b id="statusTxt">جارٍ التحقق…</b><div class="muted small" id="statusSub"></div></div>
+  </section>
+
+  <section class="panel">
+    <h2>تغيير الحالة</h2>
+    <div class="seg" role="group" aria-label="حالة المنصة">
+      <button type="button" class="run" id="setRun" aria-pressed="false">تعمل</button>
+      <button type="button" class="stop" id="setStop" aria-pressed="false">متوقفة للصيانة</button>
+    </div>
+    <label for="msgIn">رسالة الصيانة التي يراها المستخدم
+      <textarea id="msgIn"></textarea></label>
+    <label for="backIn">موعد العودة المتوقع (اختياري)
+      <input type="text" id="backIn" placeholder="مثال: الساعة 9 مساءً اليوم"></label>
+    <div class="row"><button class="btn primary" type="button" id="saveBtn">حفظ وتطبيق</button>
+      <a class="btn" href="https://tiqnastahlel.github.io/" target="_blank" rel="noopener">فتح المنصة</a>
+      <a class="btn" href="https://tiqnastahlel.github.io/#bypass" target="_blank" rel="noopener">فتح المنصة متجاوزًا الصيانة</a></div>
+    <div id="out" hidden></div>
+    <p class="muted small" style="margin:0">يصل التغيير إلى المستخدمين خلال دقيقة إلى دقيقتين تقريبًا. المستخدم الذي يفتح المنصة أثناء الصيانة يرى الرسالة بدل الموقع.</p>
+  </section>
+
+  <section class="panel">
+    <h2>مفتاح الدخول</h2>
+    <label for="tokIn">مفتاح GitHub (Fine-grained token)
+      <input type="password" id="tokIn" autocomplete="off" spellcheck="false" placeholder="github_pat_..."></label>
+    <label class="chk"><input type="checkbox" id="remember"> تذكّر المفتاح على هذا الجهاز فقط</label>
+    <details>
+      <summary>كيف أنشئ المفتاح؟ (مرة واحدة)</summary>
+      <ol>
+        <li>افتح <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">صفحة إنشاء مفتاح جديد</a> في GitHub.</li>
+        <li>الاسم: <code>TiqnasTahlel control</code>، والمدة كما تريد.</li>
+        <li>في <b>Resource owner</b> اختر <code>TiqnasTahlel</code>.</li>
+        <li>في <b>Repository access</b> اختر <b>Only select repositories</b> ثم <code>TiqnasTahlel.github.io</code>.</li>
+        <li>في <b>Permissions</b> ثم <b>Contents</b> اختر <b>Read and write</b>.</li>
+        <li>اضغط <b>Generate token</b>، وانسخ المفتاح والصقه هنا.</li>
+      </ol>
+      <p class="muted small" style="margin:8px 0 0">المفتاح لا يُرسل إلا إلى GitHub مباشرة. لا تشاركه مع أحد، ولا تختر «تذكّر» على جهاز مشترك.</p>
+    </details>
+  </section>
+  <p class="muted small" style="text-align:center;margin:0">TiqnasTahlel · لوحة التحكم</p>
+</div>
+<script>
+const REPO='TiqnasTahlel/TiqnasTahlel.github.io', PATH='status.json', API='https://api.github.com/repos/'+REPO+'/contents/'+PATH;
+const DEF_MSG='المنصة متوقفة مؤقتًا لأعمال الصيانة والتحديث. نعتذر عن الإزعاج، وسنعود قريبًا بإذن الله.';
+const $=s=>document.querySelector(s);
+let state={maintenance:false,message:DEF_MSG,back:''}, want=false, sha=null;
+try{const t=localStorage.getItem('tt-token');if(t){$('#tokIn').value=t;$('#remember').checked=true}}catch(_){}
+function show(s,sub){const box=$('#statusBox');box.classList.toggle('on',!s.maintenance);box.classList.toggle('off',!!s.maintenance);
+  $('#statusTxt').textContent=s.maintenance?'متوقفة للصيانة':'تعمل';$('#statusSub').textContent=sub||(s.updated?'آخر تغيير: '+new Date(s.updated).toLocaleString('ar-SA-u-nu-latn'):'')}
+function pick(v){want=v;$('#setRun').setAttribute('aria-pressed',String(!v));$('#setStop').setAttribute('aria-pressed',String(v))}
+function out(t,ok){const o=$('#out');o.hidden=false;o.className='msg '+(ok?'ok':'err');o.textContent=t}
+const b64=s=>{const b=new TextEncoder().encode(s);let x='';b.forEach(c=>x+=String.fromCharCode(c));return btoa(x)};
+const unb64=s=>new TextDecoder().decode(Uint8Array.from(atob(s.replace(/\n/g,'')),c=>c.charCodeAt(0)));
+function fill(s){state={maintenance:!!s.maintenance,message:s.message||DEF_MSG,back:s.back||'',updated:s.updated};show(state);pick(state.maintenance);$('#msgIn').value=state.message;$('#backIn').value=state.back}
+async function loadPublic(){try{const r=await fetch('https://tiqnastahlel.github.io/status.json?t='+Date.now(),{cache:'no-store'});if(r.ok) fill(await r.json());else fill({})}catch(_){fill({});show(state,'تعذّر قراءة الحالة. تحقق من الاتصال.')}}
+async function loadApi(tok){const r=await fetch(API+'?ref=main&t='+Date.now(),{headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json'},cache:'no-store'});
+  if(r.status===404){sha=null;return null}
+  if(!r.ok) throw r;const j=await r.json();sha=j.sha;return JSON.parse(unb64(j.content))}
+function errText(st){return st===401?'المفتاح غير صحيح أو انتهت صلاحيته. أنشئ مفتاحًا جديدًا.':st===403?'المفتاح لا يملك صلاحية الكتابة. اجعل Contents على Read and write لمستودع TiqnasTahlel.github.io.':st===404?'المفتاح لا يصل إلى مستودع TiqnasTahlel.github.io. تأكد من اختياره في Repository access.':st===409||st===422?'تغيّرت الحالة من جهاز آخر في الوقت نفسه. أعد المحاولة.':'تعذّر الحفظ. تحقق من الاتصال ثم أعد المحاولة.'}
+$('#setRun').onclick=()=>pick(false);$('#setStop').onclick=()=>pick(true);
+$('#saveBtn').onclick=async()=>{
+  const tok=$('#tokIn').value.trim();
+  if(!tok){out('الصق مفتاح GitHub أولًا من قسم «مفتاح الدخول».',false);$('#tokIn').focus();return}
+  try{if($('#remember').checked) localStorage.setItem('tt-token',tok);else localStorage.removeItem('tt-token')}catch(_){}
+  const btn=$('#saveBtn');btn.disabled=true;btn.textContent='جارٍ الحفظ…';
+  try{
+    await loadApi(tok);
+    const next={maintenance:want,message:$('#msgIn').value.trim()||DEF_MSG,back:$('#backIn').value.trim(),updated:new Date().toISOString()};
+    const body={message:(want?'Maintenance ON':'Maintenance OFF')+' via control panel',content:b64(JSON.stringify(next,null,1)+'\n'),branch:'main'};if(sha) body.sha=sha;
+    const r=await fetch(API,{method:'PUT',headers:{Authorization:'Bearer '+tok,Accept:'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw r;
+    const j=await r.json();sha=j.content&&j.content.sha;fill(next);
+    out(want?'تم إيقاف المنصة. ستظهر رسالة الصيانة للمستخدمين خلال دقيقة أو دقيقتين.':'تم تشغيل المنصة. ستعود للعمل عند المستخدمين خلال دقيقة أو دقيقتين.',true);
+  }catch(e){console.error(e);out(errText(e&&e.status),false)}
+  finally{btn.disabled=false;btn.textContent='حفظ وتطبيق'}
+};
+loadPublic();
+</script>
+</body>
+</html>
