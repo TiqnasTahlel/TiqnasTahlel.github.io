@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="version" content="1.3">
+<meta name="version" content="1.4">
 <meta name="description" content="TiqnasTahlel - تقناس تحليل: تحليل نتائج الطلاب من إشعارات وكشوف نور (إكسل وPDF)، توزيع المستويات، إشعار المعلمين، والتقرير الرسمي بصيغة Word وPDF.">
 <meta property="og:title" content="TiqnasTahlel - تقناس تحليل">
 <meta property="og:description" content="ارفع نتائج الفترة واحصل على التحليل والتقارير فورًا">
@@ -191,6 +191,15 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 .rp-sig.two{grid-template-columns:1fr 1fr;padding-top:8px;padding-bottom:4px}
 .rp-tsig{display:flex;justify-content:space-between;gap:12px;padding-top:12px;font-size:12.5px}
 .rp-sig span{font-size:11.5px}
+.maint{position:fixed;inset:0;z-index:50;background:var(--paper);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));text-align:center}
+.maint-in{max-width:520px;display:grid;gap:14px;justify-items:center}
+.maint .mark{width:64px;height:64px;font-size:1.8rem;border-radius:14px}
+.maint h2{font-size:1.45rem;color:var(--ink)}
+.maint p{margin:0;color:var(--muted);font-size:1.02rem;line-height:1.8}
+.maint .back{color:var(--ink);font-weight:600}
+.maint .gear{width:56px;height:56px;color:var(--accent)}
+@media (prefers-reduced-motion:no-preference){.maint .gear{animation:spin 6s linear infinite}}
+@keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:8px;max-width:calc(100% - 32px);z-index:20;font-size:.9rem}
 .empty{padding:30px;text-align:center;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -203,7 +212,7 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
   <header class="top">
     <div class="brand">
       <div class="mark" aria-hidden="true">ت</div>
-      <div><h1>TiqnasTahlel <span class="h1ar">تقناس تحليل</span> <span class="ver" id="appVer" title="رقم الإصدار">الإصدار 1.3</span></h1><div class="muted" style="font-size:.88rem">تحليل نتائج الطلاب من إشعارات وكشوف نور: إكسل أو PDF</div></div>
+      <div><h1>TiqnasTahlel <span class="h1ar">تقناس تحليل</span> <span class="ver" id="appVer" title="رقم الإصدار">الإصدار 1.4</span></h1><div class="muted" style="font-size:.88rem">تحليل نتائج الطلاب من إشعارات وكشوف نور: إكسل أو PDF</div></div>
     </div>
     <div class="actions">
       <button class="btn primary" id="goExport" type="button">تصدير التقرير الرسمي</button>
@@ -239,11 +248,11 @@ tr.sel td{background:color-mix(in srgb,var(--accent) 10%,transparent)}
 
   <main id="view"></main>
 </div>
-<footer class="appfoot" id="appFoot">TiqnasTahlel · الإصدار 1.3 · تُحلَّل الملفات داخل متصفحك ولا تُرفع إلى أي خادم</footer>
+<footer class="appfoot" id="appFoot">TiqnasTahlel · الإصدار 1.4 · تُحلَّل الملفات داخل متصفحك ولا تُرفع إلى أي خادم</footer>
 <div class="toast" id="toast" hidden></div>
 
 <script>
-const APP_VER='1.3';
+const APP_VER='1.4';
 const AR='٠١٢٣٤٥٦٧٨٩';
 const S={classes:[],subjects:[],sample:true,cls:'all',view:'overview',passPct:50,
   scale:[{label:'ممتاز',min:90},{label:'جيد جدًا',min:80},{label:'جيد',min:65},{label:'مقبول',min:50},{label:'ضعيف',min:0}],
@@ -1143,7 +1152,9 @@ const reportGen=api=>{const {m,newPage,add,addTable,H,img}=api;
 
 /* ---------- teacher notice (إشعار معلم) ---------- */
 EX.teachers=EX.teachers||{};
-const NT={sub:null,levels:[3,4],over:{},scope:'current'};
+const NT={sub:null,levels:[3,4],over:{},scope:'current',names:true};
+try{NT.names=localStorage.getItem('ra-nt-names')!=='0'}catch(_){}
+const ntSec=()=>NT.names?'ثالثًا':'ثانيًا';
 try{const v=JSON.parse(localStorage.getItem('ra-nt-levels')||'null');if(Array.isArray(v)) NT.levels=v}catch(_){}
 const ntKey=(g,sub,st)=>g+'|'+sub+'|'+(st.id||st.name)+'|'+(st.cls||'');
 function ntSelected(g,s,st){const p=pct(st,s);const k=ntKey(g,s.label,st);if(k in NT.over) return NT.over[k];return p!=null&&NT.levels.includes(gradeIdx(p))}
@@ -1181,6 +1192,10 @@ function vNotice(){
     <div><div class="muted" style="font-size:.85rem;margin-bottom:6px">يُحدَّد تلقائيًا الطلاب في هذه المستويات، ويمكنك تعديل التحديد من القائمة:</div><div class="srow">${lvChk}</div></div>
     <div class="tw" style="max-height:340px;overflow:auto"><table><thead><tr><th></th><th>اسم الطالب</th>${d.multi?'<th>الفصل</th>':''}<th>الدرجة</th><th>المستوى</th></tr></thead><tbody>${pickRows}</tbody></table></div>
     <div class="muted" style="font-size:.85rem">المحددون: <b>${d.sel.length}</b> طالب. الأسماء والمعلم يُحفظان لكل مادة.</div>
+    <fieldset class="scope"><legend>طلاب كل مستوى في الخطاب</legend>
+      <label class="chk"><input type="radio" name="ntNames" value="1" ${NT.names?'checked':''}> إظهار الأسماء أمام كل تقدير</label>
+      <label class="chk"><input type="radio" name="ntNames" value="0" ${NT.names?'':'checked'}> الاكتفاء بالعدد</label>
+    </fieldset>
     <fieldset class="scope"><legend>نطاق الإشعار</legend>
       <label class="chk"><input type="radio" name="ntScope" value="current" ${NT.scope==='current'?'checked':''}> ${esc(g==='all'?(VC().length>1?'جميع الفصول مجتمعة':VC()[0]?.name||''):g)}</label>
       <label class="chk"><input type="radio" name="ntScope" value="each" ${NT.scope==='each'?'checked':''}> إشعار مستقل لكل ${S.merge?'صف':'فصل'} (${VC().length})</label>
@@ -1195,9 +1210,9 @@ function vNotice(){
       <div>السلام عليكم ورحمة الله وبركاته، وبعد:</div>
       <div>${esc(ntIntro(d,m))}</div>
       <div class="b">أولًا: توزيع الطلاب على المستويات</div>${lvTable}
-      <div class="b">ثانيًا: طلاب كل مستوى</div>${levelsList||'<div class="muted">لا توجد درجات.</div>'}
+      ${NT.names?`<div class="b">ثانيًا: طلاب كل مستوى</div>${levelsList||'<div class="muted">لا توجد درجات.</div>'}`:''}
       <div class="sig"><div><b>معد التقرير</b><span>${esc(m.prep||'..................')}</span></div><div><b>مدير المدرسة</b><span>${esc(m.principal||'..................')}</span></div></div>
-      <div class="b">ثالثًا: الطلاب المحددون (${d.sel.length}) — يدوّن المعلم الأسباب والإجراء</div>
+      <div class="b">${ntSec()}: الطلاب المحددون (${d.sel.length}) — يدوّن المعلم الأسباب والإجراء</div>
       ${d.sel.length?`<div class="tw"><table class="lv"><thead><tr><th>م</th><th class="sub">اسم الطالب</th><th>الدرجة</th><th>أسباب انخفاض المستوى</th><th>الإجراء العلاجي المقترح</th></tr></thead><tbody>${d.sel.map((r,i)=>`<tr><td>${i+1}</td><td class="name">${esc(r.st.name)}</td><td class="num">${scoreTxt(r,s)}</td><td></td><td></td></tr>`).join('')}</tbody></table></div>`:'<div class="muted">لم يُحدَّد طلاب.</div>'}
       <div><b>المعلم:</b> ${esc(d.teacher||'..................')} &nbsp;&nbsp; التوقيع: .......... &nbsp;&nbsp; التاريخ: ..../..../....هـ</div>
     </div>
@@ -1218,13 +1233,15 @@ function ntGen(subjects){return api=>{
     H('أولًا: توزيع الطلاب على المستويات');
     addTable(S.scale.map(lv=>`<th>${lv.label}</th>`).join('')+(d.absent.length?'<th>غائب</th>':'')+'<th>المجموع</th><th>المتوسط</th><th>نسبة النجاح</th>',
       [`<tr>${d.byLevel.map(l=>`<td>${l.length}</td>`).join('')}${d.absent.length?`<td>${d.absent.length}</td>`:''}<td>${d.list.length}</td><td>${f1(d.x.avg)}٪</td><td>${f1(d.x.pass)}٪</td></tr>`]);
+    if(NT.names){
     H('ثانيًا: طلاب كل مستوى');
     addTable('<th style="width:16%">المستوى</th><th style="width:8%">العدد</th><th class="l">أسماء الطلاب (الدرجة من '+s.max+')</th>',
       [...d.byLevel.map((l,i)=>l.length?`<tr><td><b>${S.scale[i].label}</b></td><td>${l.length}</td><td class="l">${l.map(r=>esc(r.st.name)+' ('+f1(r.v)+')').join('، ')}</td></tr>`:'').filter(Boolean),
        ...(d.absent.length?[`<tr><td><b>غائب</b></td><td>${d.absent.length}</td><td class="l">${d.absent.map(r=>esc(r.st.name)).join('، ')}</td></tr>`]:[])]);
+    }
     if(EX.ntDue) add(`<p class="rp-p">موعد الإفادة: <b>${esc(EX.ntDue)}</b></p>`);
     add(`<div class="rp-sig two">${[['معد التقرير',m.prep],['مدير المدرسة',m.principal]].map(([t,n])=>`<div><span><b>${t}:</b> ${esc(n||'....................')}</span><span>التوقيع: ................</span></div>`).join('')}</div>`);
-    H('ثالثًا: الطلاب المحددون والإفادة المطلوبة');
+    H(ntSec()+': الطلاب المحددون والإفادة المطلوبة');
     if(d.sel.length) addTable(`<th style="width:5%">م</th><th class="l" style="width:25%">اسم الطالب</th>${d.multi?'<th style="width:11%">الفصل</th>':''}<th style="width:10%">الدرجة</th><th style="width:${d.multi?24:30}%">أسباب انخفاض المستوى</th><th>الإجراء العلاجي المقترح</th>`,
       d.sel.map((r,i)=>`<tr class="tall"><td>${i+1}</td><td class="l">${esc(r.st.name)}</td>${d.multi?`<td>${esc(r.st.cls)}</td>`:''}<td>${scoreTxt(r,s)}</td><td></td><td></td></tr>`));
     else add('<p class="rp-note">لا يوجد طلاب محددون.</p>');
@@ -1246,14 +1263,16 @@ function ntDocBody(subjects){
     const hd=[...S.scale.map(l=>l.label),...(d.absent.length?['غائب']:[]),'المجموع','المتوسط','نسبة النجاح'];
     const cw=Math.floor(10080/hd.length);
     x+=wtbl(hd.map(()=>cw),[hd,[...d.byLevel.map(l=>String(l.length)),...(d.absent.length?[String(d.absent.length)]:[]),String(d.list.length),f1(d.x.avg)+'٪',f1(d.x.pass)+'٪'].map(t=>({t,center:true}))],{head:true,sz:20});
+    if(NT.names){
     x+=H('ثانيًا: طلاب كل مستوى');
     x+=wtbl([1500,900,7680],[['المستوى','العدد','أسماء الطلاب (الدرجة من '+s.max+')'],
       ...d.byLevel.map((l,i)=>l.length?[{t:S.scale[i].label,b:true,center:true},String(l.length),{t:l.map(r=>r.st.name+' ('+f1(r.v)+')').join('، '),center:false}]:null).filter(Boolean),
       ...(d.absent.length?[[{t:'غائب',b:true,center:true},String(d.absent.length),{t:d.absent.map(r=>r.st.name).join('، '),center:false}]]:[])],{head:true,sz:d.sel.length>12?16:19});
+    }
     if(EX.ntDue) x+=wp(wr('موعد الإفادة: ',{sz:20})+wr(EX.ntDue,{b:true,sz:20}),{after:20});
     const sig=(t,n)=>({xml:[wp(wr(t+': ',{b:true,sz:20})+wr(n||'....................',{sz:20}),{center:true,after:20}),wp(wr('التوقيع: ................',{sz:18}),{center:true,after:0})].join('')});
     x+=wtbl([5040,5040],[[sig('معد التقرير',m.prep),sig('مدير المدرسة',m.principal)]],{noBorder:true});
-    x+=H('ثالثًا: الطلاب المحددون والإفادة المطلوبة');
+    x+=H(ntSec()+': الطلاب المحددون والإفادة المطلوبة');
     if(d.sel.length){
       const blank=d.sel.length>8?['']:['',''];
       const w=d.multi?[500,2500,1100,1000,2480,2500]:[500,2700,1100,2880,2900];
@@ -1274,6 +1293,22 @@ async function doNoticeExport(btn){
 
 let _sv;
 function queueSave(){if(S.sample) return;clearTimeout(_sv);_sv=setTimeout(()=>{try{localStorage.setItem('ra-data',JSON.stringify({classes:S.classes,subjects:S.subjects,passPct:S.passPct,scale:S.scale,ntOver:NT.over}))}catch(_){}},400)}
+/* ---------- maintenance switch (controlled from the control panel) ---------- */
+const STATUS_URL='https://tiqnastahlel.github.io/status.json';
+function showMaint(s){
+  let m=document.getElementById('maint');
+  if(!m){m=document.createElement('div');m.id='maint';m.className='maint';m.setAttribute('role','alertdialog');m.setAttribute('aria-live','assertive');document.body.appendChild(m)}
+  m.innerHTML=`<div class="maint-in"><svg class="gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <h2>المنصة متوقفة مؤقتًا للصيانة</h2><p>${esc(s.message||'نعمل على تحديث المنصة، وسنعود قريبًا بإذن الله.')}</p>${s.back?`<p class="back">موعد العودة المتوقع: ${esc(s.back)}</p>`:''}<p style="font-size:.8rem">TiqnasTahlel · الإصدار ${APP_VER}</p></div>`;
+  m.hidden=false;document.documentElement.style.overflow='hidden';
+}
+function hideMaint(){const m=document.getElementById('maint');if(m){m.hidden=true;document.documentElement.style.overflow=''}}
+async function checkMaint(){
+  if(location.hash==='#bypass') return;
+  try{const r=await fetch(STATUS_URL+'?t='+Date.now(),{cache:'no-store'});if(!r.ok) return;const s=await r.json();if(s&&s.maintenance) showMaint(s);else hideMaint()}catch(_){}
+}
+checkMaint();setInterval(checkMaint,120000);document.addEventListener('visibilitychange',()=>{if(!document.hidden) checkMaint()});
+
 /* ---------- render ---------- */
 function render(){
   kill();
@@ -1342,6 +1377,7 @@ $('#view').addEventListener('change',e=>{
   if(t.dataset.ntlv!=null){const i=+t.dataset.ntlv;NT.levels=t.checked?[...new Set([...NT.levels,i])]:NT.levels.filter(x=>x!==i);NT.over={};try{localStorage.setItem('ra-nt-levels',JSON.stringify(NT.levels))}catch(_){} render();return}
   if(t.dataset.ntst){NT.over[t.dataset.ntst]=t.checked;render();return}
   if(t.name==='ntScope'){NT.scope=t.value;render();return}
+  if(t.name==='ntNames'){NT.names=t.value==='1';try{localStorage.setItem('ra-nt-names',NT.names?'1':'0')}catch(_){} render();return}
   if(t.name==='exScope'){S.exScope=t.value;render();return}
   if(t.id==='logoIn'&&t.files[0]){const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const sc=Math.min(1,400/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);EX.logo=c.toDataURL('image/png');saveEX();render();toast('تمت إضافة الشعار.')};im.onerror=()=>toast('تعذّرت قراءة الصورة. اختر ملف PNG أو JPG.');im.src=fr.result};fr.readAsDataURL(t.files[0]);return}
   if(t.id==='weak'){S.weak=t.checked;render()}
